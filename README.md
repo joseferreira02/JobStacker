@@ -26,6 +26,20 @@ A full-stack web application to track and organize job applications. Keep all yo
 | password_hash | VARCHAR(255) | NOT NULL             |
 | created_at    | TIMESTAMP    | DEFAULT now()        |
 
+**Roles** — Available user roles (e.g. user, admin).
+| Column      | Type        | Constraints          |
+|-------------|-------------|----------------------|
+| id          | INTEGER     | PK, Auto Increment   |
+| name        | VARCHAR(50) | UNIQUE, NOT NULL     |
+| description | TEXT        |                      |
+
+**User Roles** — Maps users to their roles (many-to-many).
+| Column      | Type      | Constraints          |
+|-------------|-----------|----------------------|
+| user_id     | INTEGER   | PK, FK → users(id)   |
+| role_id     | INTEGER   | PK, FK → roles(id)   |
+| assigned_at | TIMESTAMP | DEFAULT now()        |
+
 **Companies** — Companies where jobs are listed.
 | Column   | Type         | Constraints          |
 |----------|--------------|----------------------|
@@ -67,11 +81,15 @@ A full-stack web application to track and organize job applications. Keep all yo
 ### Relationships
 
 ```
-User ──< Application >── Job ──> Company
-              │
-              └──< Interview
+User ──<< UserRole >>── Role
+  │
+  └──< Application >── Job ──> Company
+            │
+            └──< Interview
 ```
 
+- A **User** has many **Roles** (through UserRole)
+- A **Role** has many **Users** (through UserRole)
 - A **User** has many **Applications**
 - A **Job** belongs to a **Company**
 - An **Application** belongs to a **User** and a **Job**
