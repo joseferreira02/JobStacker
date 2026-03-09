@@ -5,6 +5,7 @@ const { Sequelize } = require('sequelize');
 const swaggerUi = require('swagger-ui-express');
 const swaggerSpec = require('./swagger');
 const authRoutes = require('./routes/auth');
+const applicationRoutes = require('./routes/applications');
 
 const app = express();
 
@@ -13,6 +14,7 @@ app.use(express.json());
 
 app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec));
 app.use('/auth', authRoutes);
+app.use('/applications', applicationRoutes);
 
 const sequelize = new Sequelize(
     process.env.DEV_DB_NAME,

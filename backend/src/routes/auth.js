@@ -1,6 +1,8 @@
 const express = require('express');
 const router = express.Router();
 const { register, login } = require('../controllers/authController');
+const authMiddleware = require('../middleware/auth');
+
 
 /**
  * @swagger
@@ -107,5 +109,9 @@ router.post('/register', register);
  *         description: Internal server error
  */
 router.post('/login', login);
+
+router.get('/me', authMiddleware ,(req, res) => {
+    res.json({ user: req.user });
+});
 
 module.exports = router;
