@@ -43,12 +43,26 @@ jobs:
       - name: Run migrations
         working-directory: backend
         env:
+          NODE_ENV: test
           DEV_DB_USER: test
           DEV_DB_PASS: test
           DEV_DB_NAME: jobstacker_test
           DEV_DB_HOST: localhost
           DEV_DB_PORT: 5432
         run: npx sequelize-cli db:migrate
+
+      - name: Run tests
+        working-directory: backend
+        env:
+          NODE_ENV: test
+          JWT_SECRET: test_jwt_secret_for_ci
+          SALT_ROUNDS: 1
+          DEV_DB_USER: test
+          DEV_DB_PASS: test
+          DEV_DB_NAME: jobstacker_test
+          DEV_DB_HOST: localhost
+          DEV_DB_PORT: 5432
+        run: npm test
 
   frontend:
     name: Frontend

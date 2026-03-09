@@ -10,6 +10,70 @@ A full-stack web application to track and organize job applications. Keep all yo
 | Backend    | Node.js, Express 5             |
 | Database   | PostgreSQL, Sequelize ORM      |
 | Auth       | JWT, bcrypt                    |
+| Docs       | Swagger / OpenAPI 3.0          |
+| CI         | GitHub Actions                 |
+
+## Screenshots
+
+### Login
+![Login page](docs/auth-login.png)
+
+### Register
+![Register page](docs/auth-register.png)
+
+## API Reference
+
+Interactive docs available at `http://localhost:3001/api-docs` when the backend is running.
+
+### Auth
+
+#### `POST /auth/register`
+Register a new user.
+
+**Request body**
+```json
+{
+  "username": "john",
+  "email": "john@example.com",
+  "password": "mypassword123"
+}
+```
+
+**Responses**
+| Status | Description |
+|--------|-------------|
+| `201`  | User created — returns `{ token, user }` |
+| `400`  | Missing required fields |
+| `409`  | Email or username already in use |
+| `500`  | Internal server error |
+
+---
+
+#### `POST /auth/login`
+Login with email and password.
+
+**Request body**
+```json
+{
+  "email": "john@example.com",
+  "password": "mypassword123"
+}
+```
+
+**Responses**
+| Status | Description |
+|--------|-------------|
+| `200`  | Login successful — returns `{ token, user }` |
+| `400`  | Missing required fields |
+| `401`  | Invalid credentials |
+| `500`  | Internal server error |
+
+---
+
+The `token` returned from both endpoints is a JWT. Pass it in the `Authorization` header for protected routes:
+```
+Authorization: Bearer <token>
+```
 
 ## Database Schema
 
@@ -132,7 +196,7 @@ npx sequelize-cli db:migrate
 
 Start the server:
 ```bash
-node src/app.js
+npm run dev
 ```
 
 **3. Frontend**
@@ -146,19 +210,32 @@ npm run dev
 
 ```
 JobStacker/
+├── .github/
+│   └── workflows/
+│       └── ci.yml           # GitHub Actions CI pipeline
 ├── backend/
-│   ├── config/          # Database configuration
-│   ├── migrations/      # Sequelize migrations
-│   ├── models/          # Sequelize models
-│   ├── seeders/         # Database seed data
+│   ├── config/              # Database configuration
+│   ├── migrations/          # Sequelize migrations
+│   ├── models/              # Sequelize models
+│   ├── seeders/             # Database seed data
 │   ├── src/
-│   │   └── app.js       # Express server entry point
-│   └── .env             # Environment variables (not committed)
+│   │   ├── __tests__/       # Integration tests (Jest + Supertest)
+│   │   ├── controllers/     # Route handlers
+│   │   ├── routes/          # Express routes
+│   │   ├── app.js           # Express app
+│   │   ├── server.js        # Server entry point
+│   │   └── swagger.js       # OpenAPI config
+│   └── .env                 # Environment variables (not committed)
 ├── frontend/
-│   ├── app/             # Next.js app directory
-│   └── public/          # Static assets
+│   ├── app/
+│   │   ├── login/           # Login page
+│   │   ├── register/        # Register page
+│   │   └── layout.tsx
+│   └── public/              # Static assets
 └── docs/
-    └── schema.png       # Database diagram
+    ├── schema.png           # Database schema diagram
+    ├── auth-login.png       # Login page screenshot
+    └── auth-register.png    # Register page screenshot
 ```
 
 
