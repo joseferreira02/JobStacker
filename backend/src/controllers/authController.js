@@ -27,12 +27,12 @@ const register = async (req, res) => {
         const user = await User.create({ username, email, password_hash });
 
         const token = jwt.sign(
-            { userId: user.id, username: user.username },
+            { username: user.username,email:user.email },
             process.env.JWT_SECRET,
-            { expiresIn: '7d' }
+            { expiresIn: '1h' }
         );
 
-        return res.status(201).json({ token, user: { id: user.id, username: user.username, email: user.email } });
+        return res.status(201).json({ token, user: { username: user.username, email: user.email } });
     } catch (err) {
         console.error('Register error:', err);
         return res.status(500).json({ error: 'Internal server error' });
@@ -58,12 +58,12 @@ const login = async (req, res) => {
         }
 
         const token = jwt.sign(
-            { userId: user.id, username: user.username },
+            { username: user.username, email: user.email },
             process.env.JWT_SECRET,
-            { expiresIn: '7d' }
+            { expiresIn: '1h' }
         );
 
-        return res.status(200).json({ token, user: { id: user.id, username: user.username, email: user.email } });
+        return res.status(200).json({ token, user: { username: user.username, email: user.email } });
     } catch (err) {
         console.error('Login error:', err);
         return res.status(500).json({ error: 'Internal server error' });
