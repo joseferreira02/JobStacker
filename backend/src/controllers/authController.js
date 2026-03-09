@@ -2,7 +2,7 @@ const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
 const { User } = require('../../models');
 
-const SALT_ROUNDS = 12;
+const SALT_ROUNDS = parseInt(process.env.SALT_ROUNDS || '12', 10);
 
 const register = async (req, res) => {
     try {
