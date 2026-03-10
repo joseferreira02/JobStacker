@@ -1,6 +1,6 @@
 const request = require('supertest');
 const app = require('../app');
-const { sequelize, User, Application, Job, Company } = require('../../models');
+const { sequelize, User, Application, Job, Company, RefreshToken } = require('../../models');
 
 let token;
 
@@ -9,7 +9,7 @@ const registerAndLogin = async (username = 'appuser', email = 'appuser@example.c
     const res = await request(app)
         .post('/auth/register')
         .send({ username, email, password: 'password123' });
-    return res.body.token;
+    return res.body.accessToken;
 };
 
 // Helper — creates the minimum DB rows needed for an application
@@ -31,6 +31,7 @@ afterEach(async () => {
     await Application.destroy({ where: {}, truncate: true, cascade: true });
     await Job.destroy({ where: {}, truncate: true, cascade: true });
     await Company.destroy({ where: {}, truncate: true, cascade: true });
+    await RefreshToken.destroy({ where: {}, truncate: true, cascade: true });
     await User.destroy({ where: {}, truncate: true, cascade: true });
 });
 
