@@ -1,6 +1,6 @@
 const express = require('express');
 const router = express.Router();
-const { register, login } = require('../controllers/authController');
+const { register, login, refresh, logout } = require('../controllers/authController');
 
 /**
  * @swagger
@@ -107,5 +107,59 @@ router.post('/register', register);
  *         description: Internal server error
  */
 router.post('/login', login);
+
+/**
+ * @swagger
+ * /auth/logout:
+ *   post:
+ *     summary: Revoke a refresh token (logout)
+ *     tags: [Auth]
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required: [refreshToken]
+ *             properties:
+ *               refreshToken:
+ *                 type: string
+ *     responses:
+ *       200:
+ *         description: Logged out successfully
+ *       500:
+ *         description: Internal server error
+ */
+router.post('/logout', logout);
+
+/**
+ * @swagger
+ * /auth/refresh:
+ *   get:
+ *     summary: Refresh the access token using the httpOnly refresh token cookie
+ *     tags: [Auth]
+ *     parameters:
+ *       - in: cookie
+ *         name: refreshToken
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: The JWT refresh token stored as an httpOnly cookie
+ *     responses:
+ *       200:
+ *         description: New access token issued
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 accessToken:
+ *                   type: string
+ *       401:
+ *         description: Missing, expired, or invalid refresh token — login required
+ *       403:
+ *         description: Token reuse detected — all sessions revoked, login required
+ */
+router.get('/refresh', refresh);
 
 module.exports = router;
