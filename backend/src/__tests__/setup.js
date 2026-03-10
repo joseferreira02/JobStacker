@@ -2,7 +2,9 @@ require('dotenv').config({ path: require('path').resolve(__dirname, '../../.env'
 
 process.env.NODE_ENV = 'test';
 process.env.JWT_SECRET = process.env.JWT_SECRET || 'test_jwt_secret_for_ci';
-process.env.SALT_ROUNDS = '1';
+process.env.JWT_ACCESS_SECRET = process.env.JWT_ACCESS_SECRET || 'test_access_secret_for_ci';
+process.env.JWT_REFRESH_SECRET = process.env.JWT_REFRESH_SECRET || 'test_refresh_secret_for_ci';
+process.env.SALT_ROUNDS = 1;
 
 // Use dedicated test DB vars locally; fall back to CI values if not set
 process.env.DEV_DB_NAME = process.env.TEST_DB_NAME || process.env.DEV_DB_NAME;

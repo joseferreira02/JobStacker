@@ -1,21 +1,26 @@
+'use strict';
+
 const jwt = require('jsonwebtoken');
 
-module.exports = (req,res, next) => {
-    try{
-        const authHeader = req.headers['authorization'];
+const authenticate = (req, res, next) => {
+    const authHeader = req.headers['authorization'];
 
-        if (!authHeader || !authHeader.startsWith('Bearer ')) {
-            return res.status(401).json({ error: 'Missing JWT' });
-        }
+    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+        return res.status(401).json({ error: 'Access token required' });
+    }
 
-        const token = authHeader.split(' ')[1];
+    const token = authHeader.split(' ')[1];
 
-        const decoded = jwt.verify(token,process.env.JWT_SECRET);
-        req.user = decoded;
+    try {
+        const payload = jwt.verify(token, process.env.JWT_ACCESS_SECRET);
+        req.user = payload;
         next();
+    } catch (err) {
+        if (err.name === 'TokenExpiredError') {
+            return res.status(401).json({ error: 'Access token expired' });
+        }
+        return res.status(401).json({ error: 'Invalid access token' });
     }
-    catch(err){
-        console.log(err);
-        res.status(401).json({error: "Internal Server error"})
-    }
-}
+};
+
+module.exports = { authenticate };
