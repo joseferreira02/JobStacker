@@ -2,10 +2,9 @@ const bcrypt = require('bcrypt');
 const crypto = require('crypto');
 const jwt = require('jsonwebtoken');
 const { User, RefreshToken } = require('../../models');
-const { Op } = require('sequelize');
-const user = require('../../models/user');
 const { error } = require('console');
 
+const SALT_ROUNDS = parseInt(process.env.SALT_ROUNDS);
 
 const ACCESS_TOKEN_EXPIRY = '15m';
 const REFRESH_TOKEN_EXPIRY = '30d';
@@ -71,7 +70,7 @@ const register = async (req, res) => {
             return res.status(409).json({ error: 'Username already in use' });
         }
 
-        const password_hash = await bcrypt.hash(password, process.env.SALT_ROUNDS);
+        const password_hash = await bcrypt.hash(password, SALT_ROUNDS);
 
         const user = await User.create({ username, email, password_hash });
 
@@ -133,7 +132,7 @@ const login = async (req, res) => {
 const refresh = async (req, res) => {
 
     const refreshToken = req.cookies.refreshToken;
-    if (!refreshToken) return res.status(401).json({ Error: "Missing Refresh Token" });
+    if (!refreshToken) return res.status(401).json({ error: "Missing Refresh Token" });
 
     try {
         const decoded = jwt.verify(refreshToken, process.env.JWT_REFRESH_SECRET);
