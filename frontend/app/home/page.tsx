@@ -69,7 +69,7 @@ export default function HomePage() {
     }, [page, fetchApplications]);
 
     return (
-        <div className="h-full bg-white flex overflow-y-hidden">
+        <div className="min-h-screen bg-white flex overflow-y-hidden">
             <div className="w-1/4  bg-zinc-900 " />
             <div className="flex-1 p-8 overscroll-none">
                 {loading && <p className="text-zinc-400">Loading…</p>}
