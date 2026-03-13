@@ -66,4 +66,11 @@ const { authenticate: authMiddleware } = require('../middleware/auth');
  */
 router.get('/', authMiddleware, applications);
 
+
+router.get('/api/auth/me', authMiddleware, (req, res) => {
+    res.status(200).json({
+        user: req.user 
+    });
+});
+
 module.exports = router;

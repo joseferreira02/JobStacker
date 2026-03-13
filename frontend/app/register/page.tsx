@@ -31,10 +31,10 @@ export default function RegisterPage() {
                 username,
                 email,
                 password,
-            });
+            }, { withCredentials: true });
 
-            localStorage.setItem('token', data.token);
-            router.push('/');
+            sessionStorage.setItem('accessToken', data.accessToken);
+            router.push('/home');
         } catch (err) {
             const message = axios.isAxiosError(err)
                 ? err.response?.data?.error ?? 'Something went wrong'

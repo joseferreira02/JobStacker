@@ -6,16 +6,24 @@ const swaggerUi = require('swagger-ui-express');
 const swaggerSpec = require('./swagger');
 const authRoutes = require('./routes/auth');
 const applicationRoutes = require('./routes/applications');
+const companyRoutes = require('./routes/companies');
+const jobRoutes = require('./routes/jobs');
+require('dotenv').config();
 
 const app = express();
 
-app.use(cors());
+app.use(cors({
+    origin: process.env.FRONTEND_URL,
+    credentials: true,
+}));
 app.use(express.json());
 app.use(cookieParser());
 
 app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec));
 app.use('/auth', authRoutes);
 app.use('/applications', applicationRoutes);
+app.use('/companies', companyRoutes);
+app.use('/jobs', jobRoutes);
 
 const sequelize = new Sequelize(
     process.env.DEV_DB_NAME,
