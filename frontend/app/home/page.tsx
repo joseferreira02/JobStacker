@@ -2,6 +2,7 @@
 
 import { useEffect, useState, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
+import Image from 'next/image';
 import axios from 'axios';
 import ApplicationCard from './ApplicationCard';
 
@@ -64,14 +65,33 @@ export default function HomePage() {
         }
     }, [router]);
 
+    const handleLogout = async () => {
+        try {
+            await axios.post(
+                `${process.env.NEXT_PUBLIC_API_URL}/auth/logout`,
+                {},
+                { withCredentials: true }
+            );
+        } catch (err) {
+            console.error('Logout failed', err);
+        } finally {
+            sessionStorage.removeItem('accessToken');
+            router.push('/login');
+        }
+    };
+
     useEffect(() => {
         fetchApplications(page);
     }, [page, fetchApplications]);
 
     return (
-        <div className="min-h-screen bg-white flex overflow-y-hidden">
-            <div className="w-1/4  bg-zinc-900 " />
-            <div className="flex-1 p-8 overscroll-none">
+        <div className="h-screen bg-white flex">
+            <div className="w-1/4 bg-zinc-900">
+                <button className="w-full p-5 bg-amber-500  text-white transition-hover hover:bg-amber-600" onClick={handleLogout}>
+                    Logout
+                </button>            
+            </div>
+            <div className="flex-1 p-8 overflow-auto">
                 {loading && <p className="text-zinc-400">Loading…</p>}
                 {error && <p className="text-red-500 text-sm">{error}</p>}
 

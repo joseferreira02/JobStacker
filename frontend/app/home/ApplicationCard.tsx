@@ -24,7 +24,15 @@ export default function ApplicationCard({ app }: { app: Application }) {
     // DEBUG: Let's log the exact object React receives to see its shape
 
     return (
-        <div className="border border-zinc-200 rounded-xl px-5 py-3">
+        <div className={`border border-zinc-200 rounded-l px-5 py-3 transition-colors duration-300 ease-in-out hover:bg-zinc-50 hover:shadow-md hover:-translate-y-0.5 ${
+            {
+            applied: 'hover:shadow-blue-200',
+            interviewing: 'hover:shadow-yellow-200',
+            offered: 'hover:shadow-green-200',
+            rejected: 'hover:shadow-red-200',
+            ghosted: 'hover:shadow-zinc-200',
+            }[app.status as keyof typeof StatusColor] ?? 'hover:shadow-zinc-200'
+        }`}>
             <p className="font-semibold text-zinc-900">{app.Job?.title ?? '—'}</p>
             <p className="text-sm text-zinc-500">
                 {app.Job?.title ?? '—'}
