@@ -60,18 +60,20 @@ const register = async (req, res) => {
             return res.status(400).json({ error: 'username, email, and password are required' });
         }
 
-        const existingEmail = await User.findOne({ where: { email } });
+    
+        const [existingEmail, existingUsername] = await Promise.all([
+            User.findOne({ where: { email } }),
+            User.findOne({ where: { username } })
+        ]);
+
         if (existingEmail) {
             return res.status(409).json({ error: 'Email already in use' });
         }
-
-        const existingUsername = await User.findOne({ where: { username } });
         if (existingUsername) {
             return res.status(409).json({ error: 'Username already in use' });
         }
 
         const password_hash = await bcrypt.hash(password, SALT_ROUNDS);
-
         const user = await User.create({ username, email, password_hash });
 
         const { accessToken, refreshToken } = await issueTokens(user);

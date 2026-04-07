@@ -6,7 +6,7 @@ const getCompanyById = async (req, res) => {
         
         // Fetch company, including the list of jobs they offer
         const company = await Company.findByPk(id, {
-            include: [{ model: Job }] // adjust this based on what data frontend needs
+            include: [{ model: Job }] 
         });
 
         if (!company) {
