@@ -1,24 +1,4 @@
-enum StatusColor {
-    applied      = 'bg-blue-100 text-blue-700',
-    interviewing = 'bg-yellow-100 text-yellow-700',
-    offered      = 'bg-green-100 text-green-700',
-    rejected     = 'bg-red-100 text-red-700',
-    ghosted      = 'bg-zinc-100 text-zinc-500',
-}
-
-interface Application {
-    id: number;
-    status: string;
-    applied_at: string;
-    Job: {
-        title: string;
-        work_mode: string;
-        Company: {
-            title: string;
-            location: string;
-        };
-    };
-}
+3
 
 export default function ApplicationCard({ app }: { app: Application }) {
     // DEBUG: Let's log the exact object React receives to see its shape
