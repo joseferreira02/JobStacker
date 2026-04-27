@@ -5,7 +5,7 @@ import { useEffect } from 'react';
 import axios from 'axios';
 import Breadcrumbs from './BreadCrums';
 
-export default function Layout({ children }) {
+export default function Layout({ children }: { children: React.ReactNode }) {
     const router = useRouter();
 
     useEffect(() => {
