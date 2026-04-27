@@ -15,7 +15,6 @@ const getCompanyById = async (req, res) => {
 
         res.json(company);
     } catch (error) {
-        console.error('getCompanyById error:', error);
         res.status(500).json({ error: 'Internal server error' });
     }
 };

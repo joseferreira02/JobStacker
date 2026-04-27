@@ -38,7 +38,6 @@ const getAllApplications = async (req, res) => {
             applications: rows,
         });
     } catch (error) {
-        console.error('allApplications error:', error);
         res.status(500).json({ error: 'Internal server error' });
     }
 };
@@ -63,7 +62,6 @@ const GetSingleApplication = async (req, res) => {
 
         res.json(itemRecord);
     } catch (error) {
-        console.error('application error:', error);
         res.status(500).json({ error: 'Internal server error' });
     }
 };

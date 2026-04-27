@@ -1,56 +1,53 @@
+'use strict';
+
 const bcrypt = require('bcrypt');
 const crypto = require('crypto');
-const jwt = require('jsonwebtoken');
 const { User, RefreshToken } = require('../../models');
-const { error } = require('console');
+const {
+    signAccessToken,
+    signRefreshToken,
+    verifyRefreshToken,
+    REFRESH_TOKEN_EXPIRY_MS,
+} = require('../config/jwt');
+
+const logger = require('../config/logger');
+
+const authLogger = logger.child({ scope: 'auth' });
 
 const SALT_ROUNDS = parseInt(process.env.SALT_ROUNDS);
 
-const ACCESS_TOKEN_EXPIRY = '15m';
-const REFRESH_TOKEN_EXPIRY = '30d';
-const REFRESH_TOKEN_EXPIRY_MS = 30 * 24 * 60 * 60 * 1000;
+// ── Helpers ───────────────────────────────────────────────────────────────────
 
 const hashToken = (token) => {
     return crypto.createHash('sha256').update(token).digest('hex');
 };
 
 const issueTokens = async (user) => {
-
-    const accessToken = jwt.sign(
-        { username: user.username, email: user.email, sub: user.id },
-        process.env.JWT_ACCESS_SECRET,
-        { expiresIn: ACCESS_TOKEN_EXPIRY }
-    );
-
     const refreshTokenEntry = await RefreshToken.create({
         user_id: user.id,
-        hashed_token: "pending", 
+        hashed_token: 'pending',
         expires_at: new Date(Date.now() + REFRESH_TOKEN_EXPIRY_MS),
-        is_revoked: false
+        is_revoked: false,
     });
 
-    const refreshToken = jwt.sign(
-        { 
-            sub: user.id, 
-            jti: refreshTokenEntry.id 
-        },
-        process.env.JWT_REFRESH_SECRET,
-        { expiresIn: REFRESH_TOKEN_EXPIRY }
-    );
+    const accessToken = signAccessToken(user);
+    const refreshToken = signRefreshToken(user.id, refreshTokenEntry.id);
 
-    const hashed_token = hashToken(refreshToken);
-    refreshTokenEntry.hashed_token = hashed_token;
+    refreshTokenEntry.hashed_token = hashToken(refreshToken);
     await refreshTokenEntry.save();
 
     return { accessToken, refreshToken };
 };
 
-
-const deleteToken = async (tokenID) => {
-    await RefreshToken.destroy({
-        where: { id: tokenID}
+const setRefreshCookie = (res, token) => {
+    res.cookie('refreshToken', token, {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === 'production',
+        sameSite: 'Strict',
     });
 };
+
+// ── Controllers ───────────────────────────────────────────────────────────────
 
 const register = async (req, res) => {
     try {
@@ -60,36 +57,28 @@ const register = async (req, res) => {
             return res.status(400).json({ error: 'username, email, and password are required' });
         }
 
-    
         const [existingEmail, existingUsername] = await Promise.all([
             User.findOne({ where: { email } }),
-            User.findOne({ where: { username } })
+            User.findOne({ where: { username } }),
         ]);
 
-        if (existingEmail) {
-            return res.status(409).json({ error: 'Email already in use' });
-        }
-        if (existingUsername) {
-            return res.status(409).json({ error: 'Username already in use' });
-        }
+        if (existingEmail) return res.status(409).json({ error: 'Email already in use' });
+        if (existingUsername) return res.status(409).json({ error: 'Username already in use' });
 
         const password_hash = await bcrypt.hash(password, SALT_ROUNDS);
         const user = await User.create({ username, email, password_hash });
 
         const { accessToken, refreshToken } = await issueTokens(user);
+        setRefreshCookie(res, refreshToken);
 
-        res.cookie('refreshToken', refreshToken, {
-                httpOnly: true,    
-                secure: process.env.NODE_ENV === 'production',     
-                sameSite: 'Strict',
-            });
         return res.status(201).json({
             accessToken,
-            user: { username: user.username, email: user.email }
+            user: { username: user.username, email: user.email },
         });
 
+
     } catch (err) {
-        console.error('Register error:', err);
+        authLogger.error({ err, route: 'register' }, 'Unexpected error during registration');
         return res.status(500).json({ error: 'Internal server error' });
     }
 };
@@ -103,98 +92,85 @@ const login = async (req, res) => {
         }
 
         const user = await User.findOne({ where: { email } });
-        if (!user) {
-            return res.status(401).json({ error: 'Invalid credentials' });
-        }
+        const valid = user && await bcrypt.compare(password, user.password_hash);
 
-        const valid = await bcrypt.compare(password, user.password_hash);
+
         if (!valid) {
+            authLogger.warn({ route: 'login', ip: req.ip, userID: user.id || null }, 'Failed login attempt — invalid credentials');
             return res.status(401).json({ error: 'Invalid credentials' });
         }
 
         const { accessToken, refreshToken } = await issueTokens(user);
-
-
-        res.cookie('refreshToken', refreshToken, {
-                httpOnly: true,    
-                secure: process.env.NODE_ENV === 'production',     
-                sameSite: 'Strict',
-            });
+        setRefreshCookie(res, refreshToken);
 
         return res.status(200).json({
             accessToken,
-            user: { username: user.username, email: user.email }
+            user: { username: user.username, email: user.email },
         });
+
     } catch (err) {
-        console.error('Login error:', err);
+        authLogger.error({ err, route: 'login' }, 'Unexpected error during login');
         return res.status(500).json({ error: 'Internal server error' });
     }
 };
 
 const refresh = async (req, res) => {
-
     const refreshToken = req.cookies.refreshToken;
-    if (!refreshToken) return res.status(401).json({ error: "Missing Refresh Token" });
+    if (!refreshToken) return res.status(401).json({ error: 'Unauthorized' });
 
     try {
-        const decoded = jwt.verify(refreshToken, process.env.JWT_REFRESH_SECRET);
-        const tokenId = decoded.jti;
 
-        const tokenEntry = await RefreshToken.findByPk(tokenId);
+        const decoded = verifyRefreshToken(refreshToken);
 
+        const tokenEntry = await RefreshToken.findByPk(decoded.jti);
         if (!tokenEntry) {
-            return res.status(401).json({ error: "Token not found, please login again" });
+            return res.status(401).json({ error: 'Unauthorized' });
         }
 
-        const incomingHash = crypto.createHash('sha256').update(refreshToken).digest('hex');
+        const incomingHash = hashToken(refreshToken);
 
         if (tokenEntry.is_revoked || tokenEntry.hashed_token !== incomingHash) {
-            // Potential token theft — wipe all tokens for this user
+            authLogger.warn({ route: 'refresh', userId: decoded.sub, jti: decoded.jti, ip: req.ip }, 'Refresh token reuse detected — revoking all sessions');
             await RefreshToken.destroy({ where: { user_id: decoded.sub } });
-            return res.status(403).json({ error: "Invalid token, please login again" });
+            return res.status(403).json({ error: 'Unauthorized' });
         }
 
         const user = await User.findByPk(decoded.sub);
-        if (!user) {
-            return res.status(401).json({ error: "User not found, please login again" });
-        }
+        if (!user) return res.status(401).json({ error: 'Unauthorized' });
 
-        const accessToken = jwt.sign(
-            { username: user.username, email: user.email, sub: user.id },
-            process.env.JWT_ACCESS_SECRET,
-            { expiresIn: ACCESS_TOKEN_EXPIRY }
-        );
-
+        await RefreshToken.destroy({ where: { id: decoded.jti } });
+        const { accessToken, refreshToken } = await issueTokens(user);
+        setRefreshCookie(res, refreshToken);
         return res.status(200).json({ accessToken });
 
+
     } catch (err) {
-        return res.status(401).json({ error: "Token expired or invalid, please login again" });
+        authLogger.error({ err: err.message, route: 'refresh' }, 'Refresh token validation failed');
+        return res.status(401).json({ error: 'Unauthorized' });
     }
 };
 
 const logout = async (req, res) => {
     try {
         const refreshToken = req.cookies.refreshToken;
-        console.log(refreshToken);
 
         if (!refreshToken) {
-            return res.status(200).json({ message: 'Logged out1' });
-        }
-
-        let payload;
-        try {
-            payload = jwt.verify(refreshToken, process.env.JWT_REFRESH_SECRET);
-        } catch {
             res.clearCookie('refreshToken');
-            return res.status(200).json({ message: 'Logged out2' });
+            return res.status(200).json({ message: 'Logged out' });
         }
 
-        await deleteToken(payload.jti);
-        res.clearCookie('refreshToken');
+        try {
+            const payload = verifyRefreshToken(refreshToken);
+            await RefreshToken.destroy({ where: { id: payload.jti } });
+        } catch {
+            authLogger.warn({ route: 'logout', ip: req.ip }, 'Logout attempted with invalid or expired token');
+        }
 
-        return res.status(200).json({ message: 'Logged out3' });
+        res.clearCookie('refreshToken');
+        return res.status(200).json({ message: 'Logged out' });
+
     } catch (err) {
-        console.error('Logout error:', err);
+        authLogger.error({ err, route: 'logout' }, 'Unexpected error during logout');
         return res.status(500).json({ error: 'Internal server error' });
     }
 };

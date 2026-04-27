@@ -15,7 +15,6 @@ const getJobById = async (req, res) => {
 
         res.json(job);
     } catch (error) {
-        console.error('getJobById error:', error);
         res.status(500).json({ error: 'Internal server error' });
     }
 };
