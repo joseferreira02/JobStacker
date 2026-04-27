@@ -1,6 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const { register, login, refresh, logout } = require('../controllers/authController');
+const { authLimiter, refreshLimiter } = require('../config/rateLimiter');
 
 /**
  * @swagger
@@ -58,7 +59,7 @@ const { register, login, refresh, logout } = require('../controllers/authControl
  *       500:
  *         description: Internal server error
  */
-router.post('/register', register);
+router.post('/register',authLimiter ,register);
 
 /**
  * @swagger
@@ -106,7 +107,7 @@ router.post('/register', register);
  *       500:
  *         description: Internal server error
  */
-router.post('/login', login);
+router.post('/login' , authLimiter , login);
 
 /**
  * @swagger
@@ -160,6 +161,6 @@ router.post('/logout', logout);
  *       403:
  *         description: Token reuse detected — all sessions revoked, login required
  */
-router.get('/refresh', refresh);
+router.get('/refresh',refreshLimiter, refresh);
 
 module.exports = router;

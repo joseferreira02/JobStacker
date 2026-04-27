@@ -27,6 +27,8 @@ Interactive docs available at `http://localhost:3001/api-docs` when the backend 
 
 ### Auth
 
+This system's authentication layer was built with `OWASP` best practices and the `IAAA` security model in mind. Identification is handled through unique username and email constraints enforced at the database level, preventing duplicate identities. Authentication is performed via `bcrypt` password hashing with configurable salt rounds, and a dual-token strategy — short-lived `JWT access` tokens paired with rotating httpOnly refresh tokens, stored as hashed values in the database to mitigate token theft. Authorization is enforced through a Bearer token middleware that validates every access token before any protected resource is reached, keeping credentials out of request bodies entirely. Accountability is maintained through structured logging via a scoped Pino logger, capturing failed login attempts, token reuse events, and unexpected errors with IP addresses and user context for auditability. Additional hardening includes refresh token rotation with reuse detection (triggering full session revocation), rate limiting on all auth endpoints, and secure, SameSite-strict cookie configuration.
+
 #### `POST /auth/register`
 Register a new user.
 
@@ -187,7 +189,14 @@ DEV_DB_PASS=your_db_password
 DEV_DB_NAME=jobstacker
 DEV_DB_HOST=localhost
 DEV_DB_PORT=5432
+
+JWT_REFRESH_SECRET=your-jwt-key
+JWT_ISSUER=jwt-issuer
+JWT_AUDIENCE=jwt-audience
+SALT_ROUNDS=your-salt-rounds
 ```
+
+Create a `public.pem` and `private.pem` in `backend/keys/` and generate an RSA key pair.
 
 Run database migrations:
 ```bash
@@ -199,6 +208,13 @@ Start the server:
 npm run dev
 ```
 
+Create a docker image with redis:
+
+```sh
+docker run -d  --name redis-server   -p 6379:6379   redis:7
+``
+
+
 **3. Frontend**
 ```bash
 cd frontend
@@ -206,36 +222,5 @@ npm install
 npm run dev
 ```
 
-## Project Structure
-
-```
-JobStacker/
-├── .github/
-│   └── workflows/
-│       └── ci.yml           # GitHub Actions CI pipeline
-├── backend/
-│   ├── config/              # Database configuration
-│   ├── migrations/          # Sequelize migrations
-│   ├── models/              # Sequelize models
-│   ├── seeders/             # Database seed data
-│   ├── src/
-│   │   ├── __tests__/       # Integration tests (Jest + Supertest)
-│   │   ├── controllers/     # Route handlers
-│   │   ├── routes/          # Express routes
-│   │   ├── app.js           # Express app
-│   │   ├── server.js        # Server entry point
-│   │   └── swagger.js       # OpenAPI config
-│   └── .env                 # Environment variables (not committed)
-├── frontend/
-│   ├── app/
-│   │   ├── login/           # Login page
-│   │   ├── register/        # Register page
-│   │   └── layout.tsx
-│   └── public/              # Static assets
-└── docs/
-    ├── schema.png           # Database schema diagram
-    ├── auth-login.png       # Login page screenshot
-    └── auth-register.png    # Register page screenshot
-```
 
 
